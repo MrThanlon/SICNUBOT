@@ -18,6 +18,7 @@ $client = new Client();
 
 
 try {
+
     if ($_SERVER["REMOTE_ADDR"] != "127.0.0.1" and
         $_SERVER["REMOTE_ADDR"] != "::1")//不接收本地以外的来源，为了安全性
         throw new Exception("Not localhost:{$_SERVER["REMOTE_ADDR"]}", 103);
@@ -28,6 +29,9 @@ try {
     $header = getallheaders();
     $body = file_get_contents('php://input', true);
     $hash = substr($header['X-Signature'], 5);
+
+    //用于调试
+    file_put_contents('logs/common.txt', $body."\n", FILE_APPEND);
 
     if (hash_hmac('sha1', $body, API_SECRET) != $hash)
         throw new Exception("HMAC unmatched:{$hash}", 101);
@@ -74,9 +78,10 @@ try {
     } else if ($body_json['message_type'] == 'group' &&
         $body_json['group_id'] == BOT_REVIEW) {
         //来自审核群，处理请求
-        if (preg_match('/^([1-9]\d*)([!|！|#]?)([\s\S]*)$/', $body_json['message'], $matched_arr)) {
+        if (preg_match('/^([1-9]\d*)([!|#]?)([\s\S]*)$/', $body_json['message'], $matched_arr)) {
             $query_res = $db->query("SELECT `sender`,`status`,`message` FROM `messages` " .
-                "WHERE `code`='{$matched_arr[0]}' LIMIT 1");
+                "WHERE `code`='{$matched_arr[1]}' LIMIT 1");
+
             if ($query_res->num_rows == 0)
                 //没有数据
                 throw new Exception('No this code', 202);
@@ -86,18 +91,23 @@ try {
                 //消息已被审核过
                 throw new Exception('Message has been reviewed', 203);
 
-            if ($matched_arr[1] == '') {
-                if ($matched_arr[2])
+            if ($matched_arr[2] == '') {
+                if ($matched_arr[3])
                     //没有符号，但是有其他消息，认为是命令错误
                     throw new Exception('Wrong review command', 201);
 
-                //消息编辑
-                $message_send = "[{$matched_arr[0]}][{$res_arr[0]}]" . $res_arr[2];
+                //消息填充
+                $message_send = "[{$matched_arr[1]}][{$res_arr[0]}]" . $res_arr[2];
+
                 //入库
                 $db->query("UPDATE `messages` SET " .
                     "`status` = '1'," .
                     "`reviewer` = {$body_json['sender']['user_id']} " .
-                    "WHERE `code` = '{$matched_arr[0]}'");
+                    "WHERE `code` = '{$matched_arr[1]}'");
+
+                //用于调试
+                //file_put_contents('logs/common.txt', "yes\n", FILE_APPEND);
+
                 //消息发送
                 foreach (BOT_SEND as $value) {
                     $res = $client->request('POST', API_GROUP_URL, [
@@ -113,32 +123,33 @@ try {
                     if ($res_json['retcode'] != 0)
                         throw new Exception('System Error', 107);
                 }
-            } else if ($matched_arr[1] == '!' || $matched_arr[1] == '！') {
+            } else if ($matched_arr[2] == '!') {
                 //审核不通过
 
                 //入库
                 $db->query("UPDATE `messages` SET " .
                     "`status` = '2'," .
                     "`reviewer` = '{$body_json['sender']['user_id']}' " .
-                    "WHERE `code` = '{$matched_arr[0]}'");
-            } else if ($matched_arr[1] == '#') {
+                    "WHERE `code` = '{$matched_arr[1]}'");
+
+            } else if ($matched_arr[2] == '#') {
                 //审核带信
 
                 //带信编码
-                $reviewer_msg = "[{$matched_arr[0]}][{$body_json['sender']['user_id']}]".
-                    msg_filter($matched_arr[2]);
+                $reviewer_msg = "[{$matched_arr[1]}][{$body_json['sender']['user_id']}]" .
+                    msg_filter($matched_arr[3]);
 
                 //入库
                 $db->query("UPDATE `messages` SET " .
                     "`status` = '3'," .
                     "`reviewer` = '{$body_json['sender']['user_id']}'," .
-                    "`reviewer_msg` = {$reviewer_msg} " .
-                    "WHERE `code` = '{$matched_arr[0]}'");
+                    "`reviewer_msg` = '{$reviewer_msg}' " .
+                    "WHERE `code` = '{$matched_arr[1]}'");
                 //发信
-                $res = $client->request('POST',API_PRIVA_URL,[
-                    'json'=>[
-                        'user_id'=>$res_arr[0],
-                        'message'=>$reviewer_msg
+                $res = $client->request('POST', API_PRIVA_URL, [
+                    'json' => [
+                        'user_id' => $res_arr[0],
+                        'message' => $reviewer_msg
                     ]
                 ]);
                 //异常处理
@@ -154,7 +165,7 @@ try {
             throw new Exception('Wrong review command', 201);
 
     } else
-        exit;//不做响应
+        throw new Exception("Unknow message type:{$body_json['message_type']}", 105);
 
 } catch (RequestException $e) {
     file_put_contents('logs/error.txt', 'RE:' . $e->getMessage() . "\n", FILE_APPEND);
