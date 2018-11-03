@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="dataSourceStorageLocal">
+    <data-source name="ch34k.xyz" uuid="f93ccc0a-511c-4f58-8d24-dc919bf0f692">
+      <database-info product="MySQL" version="10.0.34-MariaDB-0ubuntu0.16.04.1" jdbc-version="4.2" driver-name="MariaDB connector/J" driver-version="2.2.1">
+        <extra-name-characters>#@</extra-name-characters>
+        <identifier-quote-string>`</identifier-quote-string>
+      </database-info>
+      <case-sensitivity plain-identifiers="exact" quoted-identifiers="exact" />
+      <secret-storage>master_key</secret-storage>
+      <user-name>qqbot</user-name>
+      <introspection-schemas>*:qqbot</introspection-schemas>
+    </data-source>
+  </component>
+</project>
