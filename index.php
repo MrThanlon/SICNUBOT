@@ -136,6 +136,8 @@ try {
                     "`status` = '2'," .
                     "`reviewer` = '{$body_json['sender']['user_id']}' " .
                     "WHERE `code` = '{$matched_arr[1]}'");
+                //慢点
+                sleep(1);
                 //这里有个坑，不能自动回复，不然会回复到群里而不是私聊
                 //发信
                 $res = $client->request('POST', API_PRIVA_URL, [
@@ -162,6 +164,7 @@ try {
                     "`reviewer` = '{$body_json['sender']['user_id']}'," .
                     "`reviewer_msg` = '{$reviewer_msg_filter}' " .
                     "WHERE `code` = '{$matched_arr[1]}'");
+                sleep(1);
                 //发信
                 $res = $client->request('POST', API_PRIVA_URL, [
                     'json' => [
@@ -192,24 +195,24 @@ try {
                 //日志入库，用于产生serial编号
                 $db->query("INSERT INTO `sending_log` (`msg`, `sender`) " .
                     "VALUE ('$reviewer_msg_filter','$res_arr[0]')");
-                //发信
-                $res = $client->request('POST', API_PRIVA_URL, [
-                    'json' => [
-                        'user_id' => $res_arr[0],
-                        'message' => //带信填充
-                            "&#91;{$db->insert_id}&#93;&#91;{$res_arr[0]}&#93;" .
-                            "&#91;管理员{$body_json['sender']['user_id']}修订&#93;" .
-                            "{$reviewer_msg_filter}"
-                    ]
-                ]);
-                //异常处理
-                if ($res->getStatusCode() != 200)
-                    throw new Exception('API error', 107);
-                $res_json = json_decode($res->getBody(), true);
-                if ($res_json['retcode'] != 0)
-                    throw new Exception('System Error', 107);
+                //发信，基本抄上面
+                foreach(BOT_SEND as $value){
+                    $res = $client->request('POST', API_GROUP_URL, [
+                        'json' => [
+                            'group_id' => $value,
+                            //带信填充
+                            'message' => "&#91;{$db->insert_id}&#93;{$reviewer_msg_filter}"
+                        ]
+                    ]);
+                    sleep(1);
+                    //异常处理
+                    if ($res->getStatusCode() != 200)
+                        throw new Exception('API error', 107);
+                    $res_json = json_decode($res->getBody(), true);
+                    if ($res_json['retcode'] != 0)
+                        throw new Exception('System Error', 107);
 
-
+                }
             } else
                 throw new Exception('Wrong reviewer symbol', 201);
         } else
