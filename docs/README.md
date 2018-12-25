@@ -1,16 +1,20 @@
 # SICNUBOT
 
-SICNUBOT是专为四川师范大学设计用于审核发布消息用的QQ机器人。
+[SICNUBOT](https://github.com/mrthanlon/SICNUBOT)是专为四川师范大学设计用于审核发布消息用的QQ机器人。
 
 ## 安装环境
 
 - Web Server(IIS / Apache / nginx / ...)
 - PHP (>=7.0)
 - MySQL / MariaDB
+- 酷Q
+- coolq-http-api (>=4.6.0)
 
 ## 安装方法
 
 导入`mysql/qqbot.sql`到你的数据库，建议为应用单独分配一个用户。  
+
+coolq-http-api需要配置`post_url`，你可以修改使用目录下的`config.json.simple`配置文件。暂不支持非本地来源。
 
 ### 修改配置文件config.php
 
@@ -92,10 +96,23 @@ QQ号码为发送者的QQ号码。
 那么机器人将把把下面这条消息同步发送到各个群
 
 ```
-[消息序号][编号89对应的发送者QQ号][审核者QQ号+修订]出售一本《Python-Cookbook》，联系17677776666
+[消息序号]出售一本《Python-Cookbook》，联系17677776666
 ```
 
 但是这样可能导致不符合原发布者的意向，实际不建议这么操作。
+
+### 消息编号归零
+
+如果希望消息编号重新从1开始，可以清空数据库中的`sending_log`表和`messages`表并把这两个表的`auto_increment`设为1。你也可以使用下面的MySQL代码（假设数据库为qqbot）。
+
+```mysql
+TRUNCATE `sending_log`;
+ALTER TABLE `sending_log` auto_increment = 1;
+TRUNCATE `messages`;
+ALTER TABLE `messages` auto_increment = 1;
+```
+
+如果希望在一定周期内自动执行这个过程，可以创建一个存储过程，然后添加到事件中。
 
 ## 日志
 

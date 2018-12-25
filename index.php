@@ -6,7 +6,7 @@
 require "vendor/autoload.php";
 require "config.php";
 require "include/url.php";
-require "include/filter.php";
+//require "include/filter.php";
 require "include/logwrite.php";
 header('Content-type: application/json');
 
@@ -53,7 +53,7 @@ try {
     //私聊消息，转发到审核群
     if ($body_json['message_type'] == 'private') {
         //SQL过滤
-        $filter_str = msg_filter($body_json['message']);
+        $filter_str = $db->real_escape_string($body_json['message']);
         //入库
         $db->query("INSERT INTO `messages` (`sender`,`status`,`message`) " .
             "VALUES ('{$body_json['sender']['user_id']}',0,'{$filter_str}')");
@@ -73,7 +73,6 @@ try {
         $res_json = json_decode($res->getBody(), true);
         if ($res_json['retcode'] != 0)
             throw new Exception('System Error', 107);
-        sleep(1);//响应慢一点
         //自动回复
         if (BOT_REPLY)
             echo json_encode(['reply' => BOT_REPLY]);
@@ -109,17 +108,15 @@ try {
                 $db->query("INSERT INTO `sending_log` (`msg`, `sender`) " .
                     "VALUE ('$res_arr[2]','$res_arr[0]')");
                 //消息填充
-                //$message_send = "&#91;{$db->insert_id}&#93;&#91;{$res_arr[0]}&#93;{$res_arr[2]}";
                 $message_send = "&#91;{$db->insert_id}&#93;{$res_arr[2]}";
                 //消息发送
                 foreach (BOT_SEND as $value) {
                     $res = $client->request('POST', API_GROUP_URL, [
                         'json' => [
                             'group_id' => $value,
-                            'message' => $message_send
+                            'message' => $message_send . "\n" . BOT_ADVERTISEMENT
                         ]
                     ]);
-                    sleep(1);//发送慢一点，防封杀
                     //异常处理
                     if ($res->getStatusCode() != 200)
                         throw new Exception('API error', 107);
@@ -136,8 +133,6 @@ try {
                     "`status` = '2'," .
                     "`reviewer` = '{$body_json['sender']['user_id']}' " .
                     "WHERE `code` = '{$matched_arr[1]}'");
-                //慢点
-                sleep(1);
                 //这里有个坑，不能自动回复，不然会回复到群里而不是私聊
                 //发信
                 $res = $client->request('POST', API_PRIVA_URL, [
@@ -154,17 +149,16 @@ try {
                     throw new Exception('System Error', 107);
 
             } else if ($matched_arr[2] == '#') {
-                //审核带信
+                //审核带信，不通过
 
                 //SQL过滤
-                $reviewer_msg_filter = msg_filter($matched_arr[3]);
+                $reviewer_msg_filter = $db->real_escape_string($matched_arr[3]);
                 //入库
                 $db->query("UPDATE `messages` SET " .
                     "`status` = '3'," .
                     "`reviewer` = '{$body_json['sender']['user_id']}'," .
                     "`reviewer_msg` = '{$reviewer_msg_filter}' " .
                     "WHERE `code` = '{$matched_arr[1]}'");
-                sleep(1);
                 //发信
                 $res = $client->request('POST', API_PRIVA_URL, [
                     'json' => [
@@ -185,7 +179,7 @@ try {
                 //修改发布内容发布
 
                 //SQL过滤
-                $reviewer_msg_filter = msg_filter($matched_arr[3]);
+                $reviewer_msg_filter = $db->real_escape_string($matched_arr[3]);
                 //入库
                 $db->query("UPDATE `messages` SET " .
                     "`status`= '4'," .
@@ -196,15 +190,14 @@ try {
                 $db->query("INSERT INTO `sending_log` (`msg`, `sender`) " .
                     "VALUE ('$reviewer_msg_filter','$res_arr[0]')");
                 //发信，基本抄上面
-                foreach(BOT_SEND as $value){
+                foreach (BOT_SEND as $value) {
                     $res = $client->request('POST', API_GROUP_URL, [
                         'json' => [
                             'group_id' => $value,
-                            //带信填充
-                            'message' => "&#91;{$db->insert_id}&#93;{$reviewer_msg_filter}"
+                            'message' => "&#91;{$db->insert_id}&#93;{$reviewer_msg_filter}\n" .
+                                BOT_ADVERTISEMENT
                         ]
                     ]);
-                    sleep(1);
                     //异常处理
                     if ($res->getStatusCode() != 200)
                         throw new Exception('API error', 107);
@@ -223,13 +216,10 @@ try {
         throw new Exception("Unknow message type:{$body_json['message_type']}", 105);
 
 } catch (RequestException $e) {
-    //file_put_contents('logs/error.txt', 'RE:' . $e->getMessage() . "\n", FILE_APPEND);
     errlogwrite($e->getCode(), $e->getMessage());
 } catch (GuzzleException $e) {
-    //file_put_contents('logs/error.txt', 'GE:' . $e->getMessage() . "\n", FILE_APPEND);
     errlogwrite($e->getCode(), $e->getMessage());
 } catch (Exception $e) {
     //错误记录
-    //file_put_contents('logs/error.txt', $e->getMessage() . "\n", FILE_APPEND);
     errlogwrite($e->getCode(), $e->getMessage());
 }
