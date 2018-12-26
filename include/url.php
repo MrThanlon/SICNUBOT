@@ -7,6 +7,7 @@
  * 返回值为数组，包括head,body,cookie,status
  *
  * 目前无法分别cookie的域名以及其他信息，对302跳转支持不完善
+ * 请不要使用这个辣鸡轮子
  */
 function post($url, $data = array(), $cookie_str = '', $auto_follow = false)
 {

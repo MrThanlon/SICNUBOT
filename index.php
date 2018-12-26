@@ -71,7 +71,7 @@ try {
         if ($res->getStatusCode() != 200)
             throw new Exception('API error', 107);
         $res_json = json_decode($res->getBody(), true);
-        if ($res_json['retcode'] != 0)
+        if ($res_json['retcode'] != 1)
             throw new Exception('System Error', 107);
         //自动回复
         if (BOT_REPLY)
@@ -114,14 +114,16 @@ try {
                     $res = $client->request('POST', API_GROUP_URL, [
                         'json' => [
                             'group_id' => $value,
-                            'message' => $message_send . "\n" . BOT_ADVERTISEMENT
+                            'message' => BOT_ADVERTISEMENT ?
+                                $message_send . "\n\n\n--------\n" .
+                                BOT_ADVERTISEMENT : $message_send
                         ]
                     ]);
                     //异常处理
                     if ($res->getStatusCode() != 200)
                         throw new Exception('API error', 107);
                     $res_json = json_decode($res->getBody(), true);
-                    if ($res_json['retcode'] != 0)
+                    if ($res_json['retcode'] != 1)
                         throw new Exception('System Error', 107);
 
                 }
@@ -145,7 +147,7 @@ try {
                 if ($res->getStatusCode() != 200)
                     throw new Exception('API error', 107);
                 $res_json = json_decode($res->getBody(), true);
-                if ($res_json['retcode'] != 0)
+                if ($res_json['retcode'] != 1)
                     throw new Exception('System Error', 107);
 
             } else if ($matched_arr[2] == '#') {
@@ -163,16 +165,17 @@ try {
                 $res = $client->request('POST', API_PRIVA_URL, [
                     'json' => [
                         'user_id' => $res_arr[0],
-                        'message' => //带信填充
+                        'message' =>
                             "&#91;{$matched_arr[1]}&#93;&#91;{$body_json['sender']['user_id']}&#93;" .
-                            "{$reviewer_msg_filter}"
+                            "{$reviewer_msg_filter}" //带信填充
+
                     ]
                 ]);
                 //异常处理
                 if ($res->getStatusCode() != 200)
                     throw new Exception('API error', 107);
                 $res_json = json_decode($res->getBody(), true);
-                if ($res_json['retcode'] != 0)
+                if ($res_json['retcode'] != 1)
                     throw new Exception('System Error', 107);
 
             } else if ($matched_arr[2] == '=') {
@@ -194,15 +197,17 @@ try {
                     $res = $client->request('POST', API_GROUP_URL, [
                         'json' => [
                             'group_id' => $value,
-                            'message' => "&#91;{$db->insert_id}&#93;{$reviewer_msg_filter}\n" .
-                                BOT_ADVERTISEMENT
+                            'message' => BOT_ADVERTISEMENT ?
+                                "&#91;{$db->insert_id}&#93;{$reviewer_msg_filter}" .
+                                "\n\n\n--------\n" . BOT_ADVERTISEMENT :
+                                "&#91;{$db->insert_id}&#93;{$reviewer_msg_filter}"
                         ]
                     ]);
                     //异常处理
                     if ($res->getStatusCode() != 200)
                         throw new Exception('API error', 107);
                     $res_json = json_decode($res->getBody(), true);
-                    if ($res_json['retcode'] != 0)
+                    if ($res_json['retcode'] != 1)
                         throw new Exception('System Error', 107);
 
                 }
