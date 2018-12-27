@@ -3,8 +3,8 @@
  * 日志写入
  */
 
-//if(!require_once '../config.php')
-//    require '../config.php';
+if(!require_once '../config.php')
+    require '../config.php';
 
 /**
  * 用于在数据库中写入日志

@@ -5,8 +5,6 @@
 
 require "vendor/autoload.php";
 require "config.php";
-require "include/url.php";
-//require "include/filter.php";
 require "include/logwrite.php";
 header('Content-type: application/json');
 
