@@ -17,14 +17,14 @@ define('DB_NAME', 'put_your_database_name_here');
 
 //qqbot相关
 //QQ账号，仅用于验证，修改之后需要重新在酷Q上登录
-define('BOT_QQNUM','10001');
+define('BOT_QQNUM',10001);
 //需要发布已审核内容的群号，可以填写多个
 define('BOT_SEND',array(
-    '10002',
-    '10003'
+    10002,
+    10003
 ));
 //审核群的群号
-define('BOT_REVIEW','10004');
+define('BOT_REVIEW',10004);
 //收到消息后的自动回复
 define('BOT_REPLY','您的消息已成功转发。如果格式不对请自觉修改格式后重新发给机器人哟。格式：内容+联系方式+校区。感谢您的使用～');
 //审核被拒的回复
@@ -33,6 +33,12 @@ define('BOT_REPLY_REJECT',
 //广告内容
 define('BOT_ADVERTISEMENT',
     "在这里输入广告内容，广告会自动添加到每条消息之后。");
+//添加随机后缀，防止被发现，true=启用，false=关闭
+define('BOT_RANDOM_POST', true);
+//最长随机串
+define('BOT_RANDOM_MAX', 15);
+//最短随机串
+define('BOT_RANDOM_MIN', 2);
 
 //http-api相关
 //用于发送群消息的URL

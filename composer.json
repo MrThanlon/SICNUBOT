@@ -1,5 +1,8 @@
 {
     "require": {
+        "ext-apache": "*",
+        "ext-json": "*",
+        "ext-mysqli": "*",
         "guzzlehttp/guzzle": "^6.3"
     }
 }

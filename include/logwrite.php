@@ -3,8 +3,7 @@
  * 日志写入
  */
 
-if(!require_once '../config.php')
-    require '../config.php';
+require_once __DIR__ . '/../config.php';
 
 /**
  * 用于在数据库中写入日志
