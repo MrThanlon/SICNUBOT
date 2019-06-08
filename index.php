@@ -194,7 +194,7 @@ try {
                 $db->query("INSERT INTO `sending_log` (`msg`, `sender`) " .
                     "VALUE ('$reviewer_msg_filter','$res_arr[0]')");
                 //消息填充
-                $message_send = "&#91;{$db->insert_id}&#93;{$res_arr[2]}";
+                $message_send = "&#91;{$db->insert_id}&#93;{$matched_arr[3]}";
                 //随机数种子
                 srand(time() + (int)BOT_REVIEW);
                 //发信，基本抄上面
