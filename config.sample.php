@@ -15,6 +15,10 @@ define('DB_PASS', 'put_your_database_password_here');
 //数据库库名
 define('DB_NAME', 'put_your_database_name_here');
 
+
+//服务器相关，上报IP地址，*为允许全部
+define('SERVER_HOST', "*");
+
 //qqbot相关
 //QQ账号，仅用于验证，修改之后需要重新在酷Q上登录
 define('BOT_QQNUM',10001);
@@ -35,6 +39,8 @@ define('BOT_ADVERTISEMENT',
     "在这里输入广告内容，广告会自动添加到每条消息之后。");
 //添加随机后缀，防止被发现，true=启用，false=关闭
 define('BOT_RANDOM_POST', true);
+//随机后缀串
+define("BOT_RANDOM_SYM", '-');
 //最长随机串
 define('BOT_RANDOM_MAX', 15);
 //最短随机串

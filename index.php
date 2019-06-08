@@ -121,10 +121,10 @@ try {
                         ]
                     ]);
                     //异常处理
-                    if ($res->getStatusCode() != 200)
+                    if ($res->getStatusCode() !== 200)
                         throw new Exception('API error', 107);
                     $res_json = json_decode($res->getBody(), true);
-                    if ($res_json['retcode'] != 1)
+                    if ($res_json['retcode'] !== 1)
                         throw new Exception('System Error', 107);
 
                 }
@@ -211,10 +211,10 @@ try {
                         ]
                     ]);
                     //异常处理
-                    if ($res->getStatusCode() != 200)
+                    if ($res->getStatusCode() !== 200)
                         throw new Exception('API error', 107);
                     $res_json = json_decode($res->getBody(), true);
-                    if ($res_json['retcode'] != 1)
+                    if ($res_json['retcode'] !== 1)
                         throw new Exception('System Error', 107);
 
                 }

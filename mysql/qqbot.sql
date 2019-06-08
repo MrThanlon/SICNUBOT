@@ -1,11 +1,11 @@
 -- phpMyAdmin SQL Dump
--- version 4.7.9
+-- version 4.8.5
 -- https://www.phpmyadmin.net/
 --
--- Host: localhost
--- Generation Time: 2018-11-03 16:20:55
--- 服务器版本： 10.0.34-MariaDB-0ubuntu0.16.04.1
--- PHP Version: 7.0.30-0ubuntu0.16.04.1
+-- 主机： 127.0.0.1
+-- 生成日期： 2019-06-08 06:18:52
+-- 服务器版本： 10.3.13-MariaDB
+-- PHP 版本： 7.1.23
 
 SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
 SET AUTOCOMMIT = 0;
@@ -19,7 +19,7 @@ SET time_zone = "+00:00";
 /*!40101 SET NAMES utf8mb4 */;
 
 --
--- Database: `qqbot`
+-- 数据库： `qqbot`
 --
 
 -- --------------------------------------------------------
@@ -30,7 +30,7 @@ SET time_zone = "+00:00";
 
 CREATE TABLE `err_log` (
   `code` bigint(20) UNSIGNED NOT NULL,
-  `time` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `time` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
   `status_code` int(11) NOT NULL,
   `msg` text NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
@@ -44,11 +44,11 @@ CREATE TABLE `err_log` (
 CREATE TABLE `messages` (
   `code` bigint(20) UNSIGNED NOT NULL,
   `sender` text NOT NULL,
-  `time` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `time` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
   `status` int(11) NOT NULL,
   `message` text NOT NULL,
-  `reviewer` text NOT NULL,
-  `reviewer_msg` text NOT NULL
+  `reviewer` text DEFAULT NULL,
+  `reviewer_msg` text DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- --------------------------------------------------------
@@ -59,7 +59,7 @@ CREATE TABLE `messages` (
 
 CREATE TABLE `post_messages` (
   `code` bigint(20) UNSIGNED NOT NULL,
-  `time` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `time` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
   `message` text NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
@@ -71,24 +71,24 @@ CREATE TABLE `post_messages` (
 
 CREATE TABLE `sending_log` (
   `code` bigint(20) UNSIGNED NOT NULL,
-  `time` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `time` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
   `msg` text NOT NULL,
   `sender` text NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 --
--- Indexes for dumped tables
+-- 转储表的索引
 --
 
 --
--- Indexes for table `err_log`
+-- 表的索引 `err_log`
 --
 ALTER TABLE `err_log`
   ADD PRIMARY KEY (`code`),
   ADD UNIQUE KEY `code` (`code`);
 
 --
--- Indexes for table `messages`
+-- 表的索引 `messages`
 --
 ALTER TABLE `messages`
   ADD PRIMARY KEY (`code`),
@@ -96,14 +96,14 @@ ALTER TABLE `messages`
   ADD UNIQUE KEY `code_2` (`code`);
 
 --
--- Indexes for table `post_messages`
+-- 表的索引 `post_messages`
 --
 ALTER TABLE `post_messages`
   ADD PRIMARY KEY (`code`),
   ADD UNIQUE KEY `code` (`code`);
 
 --
--- Indexes for table `sending_log`
+-- 表的索引 `sending_log`
 --
 ALTER TABLE `sending_log`
   ADD PRIMARY KEY (`code`),
