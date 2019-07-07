@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- 主机： 127.0.0.1
--- 生成日期： 2019-06-08 06:18:52
+-- 生成日期： 2019-07-07 15:53:36
 -- 服务器版本： 10.3.13-MariaDB
 -- PHP 版本： 7.1.23
 
@@ -44,6 +44,7 @@ CREATE TABLE `err_log` (
 CREATE TABLE `messages` (
   `code` bigint(20) UNSIGNED NOT NULL,
   `sender` text NOT NULL,
+  `receiver` text NOT NULL,
   `time` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
   `status` int(11) NOT NULL,
   `message` text NOT NULL,

@@ -76,7 +76,7 @@ try {
 
     } else if ($body_json['message_type'] === 'group' &&
         $body_json['group_id'] === BOT_REVIEW &&
-        $body_json['self_id'] === BOT_CONTRLER) {
+        $body_json['self_id'] === BOT_CONTROLLER) {
         //来自审核群，处理请求
         if (preg_match('/^([1-9]\d*)([!|#|=]?)([\s\S]*)$/', $body_json['message'], $matched_arr)) {
             $query_res = $db->query("SELECT `sender`,`receiver`,`status`,`message` FROM `messages` " .
