@@ -20,13 +20,24 @@ define('DB_NAME', 'put_your_database_name_here');
 define('SERVER_HOST', "*");
 
 //qqbot相关
-//QQ账号，仅用于验证，修改之后需要重新在酷Q上登录
-define('BOT_QQNUM',10001);
-//需要发布已审核内容的群号，可以填写多个
-define('BOT_SEND',array(
-    10002,
-    10003
-));
+/**
+ * 需要发布已审核内容的群号，可以多账号，形如
+ * QQ号1 => [群号1,群号2],
+ * QQ号2 => [群号3]
+ */
+define('BOT_GROUPS', [
+    123 => [
+        1233, 1234, 1235
+    ],
+    125 => [
+        1670, 3833
+    ]
+]);
+//上报URL，如http://localhost:5700
+define('BOT_POST_URLS', [
+    12334 => 'http://localhost:5700',
+    12534 => 'http://localhost:5701'
+]);
 //审核群的群号
 define('BOT_REVIEW',10004);
 //收到消息后的自动回复

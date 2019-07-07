@@ -35,7 +35,7 @@ try {
     $body_json = json_decode($body, true);
 
     //核对QQ号
-    if ($body_json['self_id'] !== BOT_QQNUM)
+    if (!key_exists($body_json['self_id'], BOT_GROUPS))
         throw new Exception("Wrong QQ number:{$body_json['self_id']}", 102);
 
     //只接收消息，不理会其他post_type
@@ -51,13 +51,13 @@ try {
         //SQL过滤
         $filter_str = $db->real_escape_string($body_json['message']);
         //入库
-        $db->query("INSERT INTO `messages` (`sender`,`status`,`message`) " .
-            "VALUES ('{$body_json['sender']['user_id']}',0,'{$filter_str}')");
+        $db->query("INSERT INTO `messages` (`sender`,`receiver`,`status`,`message`) " .
+            "VALUES ('{$body_json['sender']['user_id']}','{$body_json['self_id']}',0,'{$filter_str}')");
         //填充编号+QQ号
         $body_json['message'] =
             "&#91;{$db->insert_id}&#93;&#91;{$body_json['sender']['user_id']}&#93;{$body_json['message']}";
         //发送到审核群
-        $res = $client->request('POST', API_GROUP_URL, [
+        $res = $client->request('POST', BOT_POST_URLS[$body_json['self_id']] . API_GROUP_URL, [
             'json' => [
                 'group_id' => BOT_REVIEW,
                 'message' => $body_json['message']
@@ -67,6 +67,7 @@ try {
         if ($res->getStatusCode() !== 200)
             throw new Exception('API error', 107);
         $res_json = json_decode($res->getBody(), true);
+        // FIXME: retcode=1是异步API
         if ($res_json['retcode'] !== 1)
             throw new Exception('System Error', 107);
         //自动回复
@@ -74,10 +75,11 @@ try {
             echo json_encode(['reply' => BOT_REPLY]);
 
     } else if ($body_json['message_type'] === 'group' &&
-        $body_json['group_id'] === BOT_REVIEW) {
+        $body_json['group_id'] === BOT_REVIEW &&
+        $body_json['self_id'] === BOT_CONTRLER) {
         //来自审核群，处理请求
         if (preg_match('/^([1-9]\d*)([!|#|=]?)([\s\S]*)$/', $body_json['message'], $matched_arr)) {
-            $query_res = $db->query("SELECT `sender`,`status`,`message` FROM `messages` " .
+            $query_res = $db->query("SELECT `sender`,`receiver`,`status`,`message` FROM `messages` " .
                 "WHERE `code`='{$matched_arr[1]}' LIMIT 1");
 
             if ($query_res->num_rows === 0)
@@ -85,6 +87,10 @@ try {
                 throw new Exception('No this code', 202);
 
             $res_arr = $query_res->fetch_row();
+            $sender = $res_arr[0];
+            $receiver = $res_arr[1];
+            $status = $res_arr[2];
+            $raw_message = $res_arr[3];
             //if ($res_arr[1] != 0)
             //消息已被审核过，按照甲方要求不处理，继续发送一遍
             //throw new Exception('Message has been reviewed', 203);
@@ -102,31 +108,33 @@ try {
                     "WHERE `code` = '{$matched_arr[1]}'");
                 //日志入库，用于产生serial编号
                 $db->query("INSERT INTO `sending_log` (`msg`, `sender`) " .
-                    "VALUE ('$res_arr[2]','$res_arr[0]')");
+                    "VALUE ('{$raw_message}','{$sender}')");
                 //消息填充
-                $message_send = "&#91;{$db->insert_id}&#93;{$res_arr[2]}";
+                $message_send = "&#91;{$db->insert_id}&#93;{$raw_message}";
                 //随机数种子
                 srand(time() + (int)BOT_REVIEW);
                 //消息发送
-                foreach (BOT_SEND as $value) {
-                    $message = $message_send;
-                    if (BOT_RANDOM_POST)
-                        $message .= "\n" . str_repeat(BOT_RANDOM_SYM, rand(BOT_RANDOM_MIN, BOT_RANDOM_MAX));
-                    if (BOT_ADVERTISEMENT)
-                        $message .= "\n" . BOT_ADVERTISEMENT;
-                    $res = $client->request('POST', API_GROUP_URL, [
-                        'json' => [
-                            'group_id' => $value,
-                            'message' => $message
-                        ]
-                    ]);
-                    //异常处理
-                    if ($res->getStatusCode() !== 200)
-                        throw new Exception('API error', 107);
-                    $res_json = json_decode($res->getBody(), true);
-                    if ($res_json['retcode'] !== 1)
-                        throw new Exception('System Error', 107);
+                foreach (BOT_GROUPS as $qq_number => $groups) {
+                    foreach ($groups as $group_number) {
+                        $message = $message_send;
+                        if (BOT_RANDOM_POST)
+                            $message .= "\n" . str_repeat(BOT_RANDOM_SYM, rand(BOT_RANDOM_MIN, BOT_RANDOM_MAX));
+                        if (BOT_ADVERTISEMENT)
+                            $message .= "\n" . BOT_ADVERTISEMENT;
+                        $res = $client->request('POST', BOT_POST_URLS[$qq_number] . API_GROUP_URL, [
+                            'json' => [
+                                'group_id' => $group_number,
+                                'message' => $message
+                            ]
+                        ]);
+                        //异常处理
+                        if ($res->getStatusCode() !== 200)
+                            throw new Exception('API error', 107);
+                        $res_json = json_decode($res->getBody(), true);
+                        if ($res_json['retcode'] !== 1)
+                            throw new Exception('System Error', 107);
 
+                    }
                 }
             } else if ($matched_arr[2] === '!') {
                 //审核不通过
@@ -138,9 +146,9 @@ try {
                     "WHERE `code` = '{$matched_arr[1]}'");
                 //这里有个坑，不能自动回复，不然会回复到群里而不是私聊
                 //发信
-                $res = $client->request('POST', API_PRIVA_URL, [
+                $res = $client->request('POST', BOT_POST_URLS[$receiver] . API_PRIVA_URL, [
                     'json' => [
-                        'user_id' => $res_arr[0],
+                        'user_id' => $sender,
                         'message' => BOT_REPLY_REJECT
                     ]
                 ]);
@@ -163,9 +171,9 @@ try {
                     "`reviewer_msg` = '{$reviewer_msg_filter}' " .
                     "WHERE `code` = '{$matched_arr[1]}'");
                 //发信
-                $res = $client->request('POST', API_PRIVA_URL, [
+                $res = $client->request('POST', BOT_POST_URLS[$receiver] . API_PRIVA_URL, [
                     'json' => [
-                        'user_id' => $res_arr[0],
+                        'user_id' => $sender,
                         'message' =>
                             "&#91;{$matched_arr[1]}&#93;&#91;{$body_json['sender']['user_id']}&#93;" .
                             "{$reviewer_msg_filter}" //带信填充
@@ -192,31 +200,33 @@ try {
                     "WHERE `code`='{$matched_arr[1]}'");
                 //日志入库，用于产生serial编号
                 $db->query("INSERT INTO `sending_log` (`msg`, `sender`) " .
-                    "VALUE ('$reviewer_msg_filter','$res_arr[0]')");
+                    "VALUE ('{$reviewer_msg_filter}','{$sender}')");
                 //消息填充
                 $message_send = "&#91;{$db->insert_id}&#93;{$matched_arr[3]}";
                 //随机数种子
                 srand(time() + (int)BOT_REVIEW);
                 //发信，基本抄上面
-                foreach (BOT_SEND as $value) {
-                    $message = $message_send;
-                    if (BOT_RANDOM_POST)
-                        $message .= "\n" . str_repeat(BOT_RANDOM_SYM, rand(BOT_RANDOM_MIN, BOT_RANDOM_MAX));
-                    if (BOT_ADVERTISEMENT)
-                        $message .= "\n" . BOT_ADVERTISEMENT;
-                    $res = $client->request('POST', API_GROUP_URL, [
-                        'json' => [
-                            'group_id' => $value,
-                            'message' => $message
-                        ]
-                    ]);
-                    //异常处理
-                    if ($res->getStatusCode() !== 200)
-                        throw new Exception('API error', 107);
-                    $res_json = json_decode($res->getBody(), true);
-                    if ($res_json['retcode'] !== 1)
-                        throw new Exception('System Error', 107);
+                foreach (BOT_GROUPS as $qq_number => $groups) {
+                    foreach ($groups as $group_number) {
+                        $message = $message_send;
+                        if (BOT_RANDOM_POST)
+                            $message .= "\n" . str_repeat(BOT_RANDOM_SYM, rand(BOT_RANDOM_MIN, BOT_RANDOM_MAX));
+                        if (BOT_ADVERTISEMENT)
+                            $message .= "\n" . BOT_ADVERTISEMENT;
+                        $res = $client->request('POST', BOT_POST_URLS[$qq_number] . API_GROUP_URL, [
+                            'json' => [
+                                'group_id' => $group_number,
+                                'message' => $message
+                            ]
+                        ]);
+                        //异常处理
+                        if ($res->getStatusCode() !== 200)
+                            throw new Exception('API error', 107);
+                        $res_json = json_decode($res->getBody(), true);
+                        if ($res_json['retcode'] !== 1)
+                            throw new Exception('System Error', 107);
 
+                    }
                 }
             } else
                 throw new Exception('Wrong reviewer symbol', 201);
