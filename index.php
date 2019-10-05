@@ -175,7 +175,7 @@ try {
                     'json' => [
                         'user_id' => $sender,
                         'message' =>
-                            "&#91;{$matched_arr[1]}&#93;&#91;{$body_json['sender']['user_id']}&#93;" .
+                            "&#91;{$matched_arr[1]}&#93;&#91;管理员QQ{$body_json['sender']['user_id']}&#93;" .
                             "{$reviewer_msg_filter}" //带信填充
 
                     ]
