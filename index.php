@@ -82,7 +82,7 @@ try {
         $body_json['self_id'] === BOT_CONTROLLER) {
         //来自审核群，处理请求
         if (preg_match('/^([1-9]\d*)([!#=%]?)([\s\S]*)$/', $body_json['message'], $matched_arr)) {
-            if ($matched_arr[2] !== '=' && $matched_arr[2] !== '%' && $matched_arr[3])
+            if ($matched_arr[2] !== '=' && $matched_arr[2] !== '#' && $matched_arr[3])
                 //认为是命令错误
                 throw new Exception('Wrong review command', 201);
 
