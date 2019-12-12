@@ -3,6 +3,7 @@
         "ext-apache": "*",
         "ext-json": "*",
         "ext-mysqli": "*",
+        "ext-mbstring": "*",
         "guzzlehttp/guzzle": "^6.3"
     }
 }

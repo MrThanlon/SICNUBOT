@@ -58,6 +58,8 @@ define("BOT_RANDOM_SYM", '-');
 define('BOT_RANDOM_MAX', 15);
 //最短随机串
 define('BOT_RANDOM_MIN', 2);
+// 屏蔽关键词，遇到关键词时自动加点号分隔，如：代课->代.课
+define('BOT_KEYWORD', ["代课"]);
 
 //http-api相关
 //用于发送群消息的URL

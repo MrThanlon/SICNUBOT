@@ -6,6 +6,7 @@
 require_once __DIR__ . "/vendor/autoload.php";
 require_once __DIR__ . "/config.php";
 require_once __DIR__ . "/include/logwrite.php";
+require_once __DIR__ . "/include/utils.php";
 header('Content-type: application/json');
 
 //使用Guzzle
@@ -48,6 +49,8 @@ try {
 
     //私聊消息，转发到审核群
     if ($body_json['message_type'] === 'private') {
+        // 关键词截断
+        $body_json['message'] = msg_keyword_split($body_json['message']);
         //SQL过滤
         $filter_str = $db->real_escape_string($body_json['message']);
         //入库
@@ -78,10 +81,13 @@ try {
         $body_json['group_id'] === BOT_REVIEW &&
         $body_json['self_id'] === BOT_CONTROLLER) {
         //来自审核群，处理请求
-        if (preg_match('/^([1-9]\d*)([!|#|=]?)([\s\S]*)$/', $body_json['message'], $matched_arr)) {
+        if (preg_match('/^([1-9]\d*)([!#=%]?)([\s\S]*)$/', $body_json['message'], $matched_arr)) {
+            if ($matched_arr[2] !== '=' && $matched_arr[2] !== '#' && $matched_arr[3])
+                //认为是命令错误
+                throw new Exception('Wrong review command', 201);
+
             $query_res = $db->query("SELECT `sender`,`receiver`,`status`,`message` FROM `messages` " .
                 "WHERE `code`='{$matched_arr[1]}' LIMIT 1");
-
             if ($query_res->num_rows === 0)
                 //没有数据
                 throw new Exception('No this code', 202);
@@ -96,11 +102,7 @@ try {
             //throw new Exception('Message has been reviewed', 203);
 
             if ($matched_arr[2] === '') {
-                if ($matched_arr[3])
-                    //没有符号，但是有其他消息，认为是命令错误
-                    throw new Exception('Wrong review command', 201);
                 //审核通过
-
                 //入库
                 $db->query("UPDATE `messages` SET " .
                     "`status` = '1'," .
@@ -206,6 +208,44 @@ try {
                 //随机数种子
                 srand(time() + (int)BOT_REVIEW);
                 //发信，基本抄上面
+                foreach (BOT_GROUPS as $qq_number => $groups) {
+                    foreach ($groups as $group_number) {
+                        $message = $message_send;
+                        if (BOT_RANDOM_POST)
+                            $message .= "\n" . str_repeat(BOT_RANDOM_SYM, rand(BOT_RANDOM_MIN, BOT_RANDOM_MAX));
+                        if (BOT_ADVERTISEMENT)
+                            $message .= "\n" . BOT_ADVERTISEMENT;
+                        $res = $client->request('POST', BOT_POST_URLS[$qq_number] . API_GROUP_URL, [
+                            'json' => [
+                                'group_id' => $group_number,
+                                'message' => $message
+                            ]
+                        ]);
+                        //异常处理
+                        if ($res->getStatusCode() !== 200)
+                            throw new Exception('API error', 107);
+                        $res_json = json_decode($res->getBody(), true);
+                        if ($res_json['retcode'] !== 1)
+                            throw new Exception('System Error', 107);
+
+                    }
+                }
+            } else if ($matched_arr[2] === '%') {
+                // 中文截断，基本抄上面
+                $raw_message = msg_all_split($raw_message);
+                //入库
+                $db->query("UPDATE `messages` SET " .
+                    "`status` = '1'," .
+                    "`reviewer` = {$body_json['sender']['user_id']} " .
+                    "WHERE `code` = '{$matched_arr[1]}'");
+                //日志入库，用于产生serial编号
+                $db->query("INSERT INTO `sending_log` (`msg`, `sender`) " .
+                    "VALUE ('{$raw_message}','{$sender}')");
+                //消息填充
+                $message_send = "&#91;{$db->insert_id}&#93;{$raw_message}";
+                //随机数种子
+                srand(time() + (int)BOT_REVIEW);
+                //消息发送
                 foreach (BOT_GROUPS as $qq_number => $groups) {
                     foreach ($groups as $group_number) {
                         $message = $message_send;
